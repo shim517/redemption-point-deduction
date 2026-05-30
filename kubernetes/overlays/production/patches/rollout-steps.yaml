@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: redemption
+spec:
+  strategy:
+    canary:
+      steps:
+        - setWeight: 10
+        - pause:
+            duration: 2m
+        - analysis:
+            templates:
+              - templateName: redemption-canary-analysis
+            args:
+              - name: env
+                value: production
+              - name: service-name
+                value: redemption
+        - setWeight: 30
+        - pause:
+            duration: 2m
+        - analysis:
+            templates:
+              - templateName: redemption-canary-analysis
+            args:
+              - name: env
+                value: production
+              - name: service-name
+                value: redemption
+        - setWeight: 60
+        - pause:
+            duration: 2m
+        - analysis:
+            templates:
+              - templateName: redemption-canary-analysis
+            args:
+              - name: env
+                value: production
+              - name: service-name
+                value: redemption

@@ -1,0 +1,11 @@
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-sqs-trigger-auth
+spec:
+  podIdentity:
+    provider: aws
+  configMapTargetRef:
+    - parameter: queueURL
+      name: redemption-config
+      key: sqs-queue-url

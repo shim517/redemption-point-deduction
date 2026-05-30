@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redemption-canary
+spec:
+  selector:
+    app: redemption
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

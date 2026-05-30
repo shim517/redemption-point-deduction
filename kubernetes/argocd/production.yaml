@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: redemption-production
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: REPLACE_WITH_GIT_REPO_URL
+    targetRevision: main
+    path: kubernetes/overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: redemption-production
+  revisionHistoryLimit: 5
+
+  syncPolicy:
+    # Manual sync for production — operator reviews diff before applying.
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+
+  ignoreDifferences:
+    - group: argoproj.io
+      kind: Rollout
+      jsonPointers:
+        - /spec/replicas
+        - /spec/paused

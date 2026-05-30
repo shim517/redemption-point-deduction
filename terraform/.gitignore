@@ -1,0 +1,21 @@
+# Local state
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Plan files
+tfplan
+*.tfplan
+plan.json
+
+# Credentials and overrides
+*.tfvars.local
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Test artifacts
+tests/**/layer2/tfplan
+tests/**/layer2/plan.json

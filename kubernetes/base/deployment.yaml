@@ -1,0 +1,116 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: redemption
+spec:
+  selector:
+    matchLabels:
+      app: redemption
+  template:
+    metadata:
+      labels:
+        app: redemption
+        tags.datadoghq.com/service: redemption
+    spec:
+      serviceAccountName: redemption
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: redemption
+          # Image is patched per overlay via kustomize images field.
+          image: redemption:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+
+          env:
+            - name: APP_PORT
+              value: "8080"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: redemption-secrets
+                  key: rds-host
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redemption-secrets
+                  key: rds-password
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redemption-secrets
+                  key: redis-url
+            - name: SQS_QUEUE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: redemption-config
+                  key: sqs-queue-url
+            - name: DD_SERVICE
+              value: "redemption"
+            - name: DD_VERSION
+              value: "REPLACE_WITH_IMAGE_TAG"
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: redemption-secrets
+                  key: sentry-dsn
+            - name: SENTRY_RELEASE
+              value: "REPLACE_WITH_IMAGE_TAG"
+            # DD_ENV and SENTRY_ENVIRONMENT are patched per overlay.
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+
+          # Resources are patched per overlay.
+          resources: {}
+
+      # Prefer spreading pods across nodes to avoid single-node SPOF.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: redemption
+                topologyKey: kubernetes.io/hostname
+
+  strategy:
+    canary:
+      canaryService: redemption-canary
+      stableService: redemption
+      canaryMetadata:
+        labels:
+          tags.datadoghq.com/version: canary
+      stableMetadata:
+        labels:
+          tags.datadoghq.com/version: stable
+      trafficRouting:
+        alb:
+          ingress: redemption
+          servicePort: 80
+      # Steps are patched per overlay.
+      steps: []

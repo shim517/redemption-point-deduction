@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redemption-worker
+spec:
+  selector:
+    matchLabels:
+      app: redemption-worker
+  template:
+    metadata:
+      labels:
+        app: redemption-worker
+    spec:
+      serviceAccountName: redemption
+      terminationGracePeriodSeconds: 60
+
+      containers:
+        - name: redemption-worker
+          # Image is patched per overlay via kustomize images field.
+          image: redemption:latest
+          imagePullPolicy: IfNotPresent
+          args: ["worker"]
+
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: redemption-secrets
+                  key: rds-host
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redemption-secrets
+                  key: rds-password
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redemption-secrets
+                  key: redis-url
+            - name: SQS_QUEUE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: redemption-config
+                  key: sqs-queue-url
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+
+          # Resources are patched per overlay.
+          resources: {}
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: redemption-worker
+                topologyKey: kubernetes.io/hostname

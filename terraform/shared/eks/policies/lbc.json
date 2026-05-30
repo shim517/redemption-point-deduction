@@ -1,0 +1,5 @@
+{
+  "_comment": "Source: https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json — download and replace this file before applying.",
+  "Version": "2012-10-17",
+  "Statement": []
+}

@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: redemption-canary-analysis
+spec:
+  args:
+    - name: env
+    - name: service-name
+  metrics:
+    - name: error-rate
+      interval: 1m
+      count: 3
+      failureLimit: 1
+      successCondition: "result[0] < 0.01"
+      provider:
+        datadog:
+          apiVersion: v2
+          query: |
+            sum:trace.http.request.errors{env:{{args.env}},service:{{args.service-name}},version:canary}.as_rate()
+            /
+            sum:trace.http.request.hits{env:{{args.env}},service:{{args.service-name}},version:canary}.as_rate()
+    - name: p99-latency
+      interval: 1m
+      count: 3
+      failureLimit: 1
+      successCondition: "result[0] < 0.5"
+      provider:
+        datadog:
+          apiVersion: v2
+          query: |
+            p99:trace.http.request.duration{env:{{args.env}},service:{{args.service-name}},version:canary}

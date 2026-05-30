@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: redemption-production
+
+resources:
+  - ../../base
+  - configmap.yaml
+  - datadog-secret.yaml
+  - externalsecret.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - trigger-auth.yaml
+  - worker-hpa.yaml
+  - worker-pdb.yaml
+  - ingress.yaml
+
+patches:
+  - path: patches/deployment.yaml
+  - path: patches/rollout-steps.yaml
+  - path: patches/worker-deployment.yaml
+  - path: patches/serviceaccount.yaml
+
+images:
+  - name: redemption
+    newName: REPLACE_WITH_ECR_REPO_URI
+    newTag: REPLACE_WITH_IMAGE_TAG
